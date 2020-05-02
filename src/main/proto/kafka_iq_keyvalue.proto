@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option java_package = "io.github.herburos.vertx.iq";
+option java_outer_classname = "KafkaIQServiceRPC";
+
+service KafkaIQService {
+    rpc getKV (GetKVRequest) returns (KVResponse) {}
+    rpc rangeKV (RangeKVRequest) returns (stream KVResponse){}
+    rpc allKV (AllKVRequest) returns (stream KVResponse){}
+    rpc approximateNumEntriesKV (ApproximateNumEntriesKVRequest) returns (ApproximateNumEntriesKVResponse){}
+}
+
+message GetKVRequest {
+    string storeName = 1;
+    string key = 2;
+}
+
+message RangeKVRequest {
+    string storeName = 1;
+    string startKey = 2;
+    string endKey = 3;
+}
+
+message AllKVRequest {
+    string storeName = 1;
+}
+
+message KVResponse {
+    string key = 1;
+    uint64 value = 2;
+}
+
+message ApproximateNumEntriesKVRequest {
+    string storeName = 1;
+}
+
+message ApproximateNumEntriesKVResponse {
+    uint64 count = 1;
+}

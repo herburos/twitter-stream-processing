@@ -2,6 +2,8 @@ package io.github.herburos;
 
 import io.github.herburos.kafka.KafkaStreamProcessor;
 import io.github.herburos.twitter.TwitterStreamProducerVerticle;
+import io.github.herburos.vertx.service.MetadataService;
+import io.github.herburos.vertx.service.MetadataServiceImpl;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import io.vertx.config.ConfigRetriever;
@@ -10,8 +12,11 @@ import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.serviceproxy.ServiceBinder;
+import io.vertx.serviceproxy.ServiceProxyBuilder;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -57,8 +62,21 @@ public class StreamProcessingApp {
             builder.createStream(streamsBuilder);
             KafkaStreams streams = new KafkaStreams(streamsBuilder.build(), builder.getConfig());
             streams.start();
+            generateMetadataService(vertx, streams);
             promise.complete();
         }, a -> {
+
         });
+    }
+
+    private static void generateMetadataService(Vertx vertx, KafkaStreams streams) {
+        MetadataService service = new MetadataServiceImpl(vertx, streams);
+        ServiceBinder binder = new ServiceBinder(vertx);
+        MessageConsumer<JsonObject> consumer = binder
+                .setAddress("count-service")
+                .register(MetadataService.class, service);
+
+        ServiceProxyBuilder proxyBuilder = new ServiceProxyBuilder(vertx).setAddress("count-service");
+        MetadataService serviceProxy = proxyBuilder.build(MetadataService.class);
     }
 }
